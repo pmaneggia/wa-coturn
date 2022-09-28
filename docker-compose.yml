@@ -1,0 +1,9 @@
+services:
+  coturn:
+    image: coturn/coturn:4.6.0
+    network_mode: host
+    volumes:
+      - ./myturnserver.conf:/etc/coturn/turnserver.conf
+      - ./turn_server_cert.pem:/usr/local/etc/turn_server_cert.pem
+      - ./turn_server_pkey.pem:/usr/local/etc/turn_server_pkey.pem  
+    restart: unless-stopped
