@@ -4,18 +4,46 @@ Here you find instructions to setup a turn stun server to allow peer-to-peer Web
 
 Without this, the nice sponaneous meetings "on the way" that Workadventure offers will not work for users behind some networks. 
 
-This in the case you use an external instance of JitsiMeet or of the BigBlueButton for video conferences. If you want to self host also JistiMeet or BBB you will need such a service also for them, but this would be another tutorial.
+This in case you use an external instance of JitsiMeet or of BigBlueButton for video conferences. If also self host JistiMeet or BBB you will need such a service anyway, but this would be another tutorial.
 
 I use `docker` and even better `docker compose`, since I find much cleaner to have all of the settings documented in a `docker-compose.yml` file than having to script a long docker command.
 
-#### What you will find here
-* a `docker-compose.yml` file and a configuration file to bring up a turn and stun servers listening at port 433 with TLS with coturn [https://github.com/coturn/coturn]
+#### What you find here
+* a `docker-compose.yml` file and a configuration file `turnserver.conf` to bring up with coturn [https://github.com/coturn/coturn] turn and stun servers listening at port 433 with TLS. I based the configuration file on [https://github.com/coturn/coturn/blob/master/examples/etc/turnserver.conf] as on commit 41a8aa0 (Status 27/09/2022)
 
-#### What do you need
+#### What you need to have
 * A server with a publicly reachable IP address.
-* I used as host name a subdomain of a domain I control, it should be possible to do without it, the only problem being, obtaining a certificate from *let's encrypt*. This should be possible using `nip.io` and using a HTTP-01 challenge as opposed to a DNS-01 challenge, see [https://letsencrypt.org/docs/challenge-types/] (TODO: this needs to be verified)
-* Clone this repository in your server on which you are running docker compose and have a user in the the `docker` and `sudo`groups.
-* Obtain a certificate with let's encrypt for your server. TODO I still to have to work out a clean and direct way to do this and also renew the certificate... without making my life easier with Traefik Proxy [https://traefik.io/traefik/]. A suitable setting for Coturn with Trafik I have not beeing able to work out yet. I am happy for any input, everyone seem to leave this as TODO...
+* I used as host name a subdomain of a domain I control, it should be possible to do without it, the only problem being, obtaining a certificate from *let's encrypt* [https://letsencrypt.org/]. This should be possible using `nip.io` [https://nip.io/] and using a HTTP-01 challenge as opposed to a DNS-01 challenge, see [https://letsencrypt.org/docs/challenge-types/] (TODO: this needs to be verified).
+* Clone this repository in your server on which you are running docker compose and have a user in the the `docker` and `sudo` groups.
+* Obtain a certificate for your server with let's encrypt. TODO I still to have to work out a clean and direct way to do this and also renew the certificate... without making my life easier with Traefik Proxy [https://traefik.io/traefik/]. A suitable setting for Coturn with Trafik I have not beeing able to work out yet. I am happy for any input, everyone seem to leave this as TODO... Possibility: look for a solution using haproxy [http://www.haproxy.org/] instead?
 
-#### What to do once you have the list above:
-* add the certificate and pkey from let's encrypt in the root directory of the repository as `turn_server_cert.pem` and `turn_server_pkey.pem` (of course you can use another directory, just change the volume to mount them accordingly)
+#### What to do once you have the above ingredients
+* Add the certificate and pkey from let's encrypt in the root directory of the repository as `turn_server_cert.pem` and `turn_server_pkey.pem` (of course you can use another directory, just change the volume to mount them accordingly in `docker-compose.yml`)
+* copy the template `turnserver.conf.template` to `turnserver.conf` and adjust some fields to your case. The most obvious are:
+.. *
+.. *
+* run `docker compose up -d` and you should have your server ready.
+* In your Workadventure instance (see [https://github.com/pmaneggia/wa-workadventure]) bind your turn and stun server by setting these variables in `.env`
+```
+```
+* In your Workadventure instance run `docker compose down` followed by `docker compose up -d` for Workadventure to have the new values being used.
+* YOU SHOULD BE DONE!
+
+#### Checking and debugging
+
+Thanks to [https://github.com/sh-csg] and [https://github.com/PhMemmel] for suggesting some of these!
+
+##### Online tools to check turn and stun servers
+
+* Tricle ICE [https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice]
+
+* ICE test [https://icetest.info]
+
+# https://ourcodeworld.com/articles/read/1526/how-to-test-online-whether-a-stun-turn-server-is-working-properly-or-not
+**RULE OF THUMB**: (can be seen using  Trickle ICE or ICE test)
+* A STUN server works if you can gather a candidate with type "srflx".
+* A TURN server works if you can gather a candidate with type "relay".
+(from  [https://ourcodeworld.com/articles/read/1526/how-to-test-online-whether-a-stun-turn-server-is-working-properly-or-not])
+
+##### Force the browser to "need" a TURN server for testing purposes
+In FireFox you can force the conditions of needing a TURN server by setting in `about:config` the preference `media.peerconnection.ice.relay_only` to true (this forces the browser to only offer relay ICE candidates).
